@@ -37,7 +37,37 @@
       </form>
     </div>
   </div>
-
+  <script src="./libs/http.js"></script>
+  <script>
+    $(function () {
+      //登录按钮点击事件 阻止默认表单提交行为
+      //获取用户名 密码 非空判断 
+      //发送ajax请求 处理响应结果
+      $('.input_sub').on('click', function (e) {
+        e.preventDefault();
+        let username = $('.input_txt').val().trim();
+        let password = $('.input_pass').val().trim();
+        if (!username || !password) {
+          alert('请输入用户名或者密码');
+          return;
+        }
+        $.ajax({
+          type: 'post',
+          url: BigNew.user_login,
+          data: {
+            username: username,
+            password: password
+          },
+          success: function (backData) {
+            if (backData.code == 200) {
+              localStorage.setItem('token', backData.token);
+              window.location.href = './index.html';
+            }
+          }
+        })
+      })
+    })
+  </script>
 </body>
 
 </html>
