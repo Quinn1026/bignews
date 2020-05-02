@@ -11,7 +11,64 @@
     <link rel="stylesheet" href="css/iconfont.css">
     <link rel="stylesheet" href="css/main.css">
     <script src="./libs/jquery-1.12.4.min.js"></script>
+    <script src="./libs/http.js"></script>
+    <script>
+        $(function () {
+            //发送ajax请求 获取数据
+            $.ajax({
+                type: 'get',
+                url: BigNew.user_detail,
+                success: function (backData) {
+                    if (backData.code == 200) {
+                        $('.username').val(backData.data.username);
+                        $('.nickname').val(backData.data.nickname);
+                        $('.email').val(backData.data.email);
+                        $('.password').val(backData.data.password);
+                        $('.user_pic').attr('src', backData.data.userPic);
+                    }
+                }
+            });
 
+            //图片文件预览
+            $('#exampleInputFile').on('change', function () {
+                let file = this.files[0];
+                let url = URL.createObjectURL(file);
+                $(this).prev().attr('src', url);
+            });
+
+            //编辑按钮点击事件 点击发送ajax请求修改数据
+            $('.btn-edit').on('click', function (e) {
+                //一定要阻止表单submit的默认提交行为
+                e.preventDefault();
+                //获取修改后的form数据
+                //fd对象获取form表单中所有带有name属性的标签的值, 这个值要发送到接口中去,
+                //所以这些name属性的取值 和 接口的参数名要一致.
+                let fd = new FormData($('#form')[0]);
+                //发送ajax请求
+                $.ajax({
+                    type: 'post',
+                    url: BigNew.user_edit,
+                    contentType: false,
+                    processData: false,
+                    data: fd,
+                    success: function (backData) {
+                        if (backData.code == 200) {
+                            //同步index页面的个人主页 使用window.parent属性
+                            $.ajax({
+                                type: 'get',
+                                url: BigNew.user_info,
+                                success: function (backData) {
+                                    parent.$('.user_info>img').attr('src', backData.data.userPic);
+                                    parent.$('.user_center_link>img').attr('src', backData.data.userPic);
+                                    parent.$('.user_info>span>i').text(backData.data.nickname);
+                                }
+                            })
+                        }
+                    }
+                })
+            })
+        })
+    </script>
 </head>
 
 <body>

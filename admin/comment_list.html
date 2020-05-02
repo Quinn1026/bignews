@@ -12,6 +12,131 @@
   <link rel="stylesheet" href="css/main.css">
   <script src="./libs/jquery-1.12.4.min.js"></script>
   <script src="./libs/template-web.js"></script>
+  <script src="./libs/http.js"></script>
+  <!-- 引入分页插件js -->
+  <script src="./libs/jquery.twbsPagination.js"></script>
+  <!-- 评论列表模版 -->
+  <script id="temp_comment" type="text/html">
+    {{each data v}}
+    {{if v.state == "待审核"}}
+    <tr class="danger">
+    {{else}}
+    <tr>
+    {{/if}}
+      <td>{{v.author}}</td>
+      <td>{{v.content}}</td>
+      <td>{{v.title}}</td>
+      <td>{{v.date}} {{v.time}}</td>
+      <td>{{v.state}}</td>
+      <td class="text-center">
+        {{if v.state == "待审核"}}
+        <a href="javascript:void(0);;" data-id={{v.id}} class="btn btn-info btn-xs">批准</a>
+        {{else if v.state == "已拒绝"}}
+        <a href="javascript:void(0);;" data-id={{v.id}} class="btn btn-warning btn-xs">拒绝</a>
+        {{/if}}
+        <a href="javascript:void(0);;" data-id={{v.id}} class="btn btn-danger btn-xs">删除</a>
+      </td>
+    </tr>
+    {{/each}}
+  </script>
+  <script>
+    $(function () {
+      //声明一个变量用来表示当前页
+      var currentPage = 1;
+      //进入页面就发送ajax请求数据
+      getData(1, function (backData) {
+        $('#pagination').twbsPagination({
+          //total总记录数，就是多少条数据  pages总页数
+          totalPages: backData.data.totalPage,
+          visiblePages: 5,
+          first: '首页',
+          last: '末页',
+          prev: '上一页',
+          next: '下一页',
+          //页码点击的回调函数事件
+          onPageClick: function (event, page) {
+            currentPage = page; //给当前页变量赋值 为 当前点击的这个页码
+            getData(page, null);
+          }
+        });
+      });
+
+      function getData(page, callback) {
+        $.ajax({
+          type: 'get',
+          url: BigNew.comment_list,
+          data: {
+            page: page,
+            perpage: 6
+          },
+          success: function (backData) {
+            // console.log(backData);
+            if (backData.code == 200) {
+              $('tbody').html(template('temp_comment', backData.data));
+              //判断回调函数是否为null,不为null就执行
+              if (callback != null && backData.data.data.length != 0) {
+                callback(backData);
+              } else if (backData.data.totalPage == currentPage - 1 && backData.data.data.length == 0) {
+                //最后一页最后的一条数据删除后
+                currentPage -= 1;
+                //根据总的页数重绘分页插件.
+                //第一个参数是事件名字, 
+                //第二个参数是改变后的总的页码
+                //第三个参数是当前要显示的页码 
+                $('#pagination').twbsPagination('changeTotalPages', backData.data.totalPage, currentPage);
+              }
+            }
+          }
+        });
+      }
+
+      //审核通过
+      $('tbody').on('click', '.btn-info', function () {
+        let id = $(this).attr('data-id');
+        $.ajax({
+          type: 'post',
+          url: BigNew.comment_pass,
+          data: { id: id },
+          success: function (backData) {
+            if (backData.code == 200) {
+              getData(currentPage, null);
+            }
+          }
+        })
+      });
+      //审核不通过
+      $('tbody').on('click', '.btn-warning', function () {
+        let id = $(this).attr('data-id');
+        $.ajax({
+          type: 'post',
+          url: BigNew.comment_reject,
+          data: { id: id },
+          success: function (backData) {
+            if (backData.code == 200) {
+              getData(currentPage, null);
+            }
+          }
+        })
+      });
+      //删除评论
+      $('tbody').on('click', '.btn-danger', function () {
+        let id = $(this).attr('data-id');
+        $.ajax({
+          type: 'post',
+          url: BigNew.comment_delete,
+          data: { id: id },
+          success: function (backData) {
+            if (backData.code == 200) {
+              getData(currentPage, function (backData) {
+                $('#pagination').twbsPagination('changeTotalPages', backData.data.totalPage, currentPage);
+              });
+            }
+          }
+        });
+
+      })
+    })
+  </script>
 </head>
 
 <body>
@@ -142,7 +267,7 @@
         </tbody>
       </table>
       <div class="row text-center">
-        <ul class="pagination pagination-sm">
+        <!-- <ul class="pagination pagination-sm">
           <li class="page-item first disabled"><a href="#" class="page-link">首页</a></li>
           <li class="page-item prev disabled"><a href="#" class="page-link">上一页</a></li>
           <li class="page-item active"><a href="#" class="page-link">1</a></li>
@@ -154,7 +279,7 @@
           <li class="page-item"><a href="#" class="page-link">7</a></li>
           <li class="page-item next"><a href="#" class="page-link">下一页</a></li>
           <li class="page-item last"><a href="#" class="page-link">尾页</a></li>
-        </ul>
+        </ul> -->
         <ul id="pagination" class="pagination-sm"></ul>
       </div>
 
